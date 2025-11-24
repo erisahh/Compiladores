@@ -4,6 +4,8 @@ import Token
 import System.IO
 import qualified Lex as L
 import Parser as P
+import ASA
+import Semantic 
 
 main :: IO ()
 main = do 
@@ -15,6 +17,7 @@ main = do
 
  let tokens = L.alexScanTokens contents
 
+ -- ANÁLISE LÉXICA
  putStrLn "Análise léxica: "
  print tokens
  putStrLn "\n"
@@ -22,6 +25,7 @@ main = do
  hPutStrLn output (show tokens)
  hPutStrLn output "\n"
 
+ -- ANÁLISE SINTÁTICA
  let asa = P.calc tokens
  putStrLn "Análise sintática: "
  print asa
@@ -29,6 +33,19 @@ main = do
 
  hPutStrLn output (show asa)  
  hPutStrLn output "\n"
+
+ -- ANÁLISE SEMÂNTICA
+ let Result (houveErro, mensagens, resultado) = analisaPrograma asa
+ let status = if houveErro then "[ERRO]" else "[OK]"
+ 
+ putStrLn $ "Análise semântica: " ++ status
+ putStrLn mensagens
+ print resultado
+ putStrLn ""
+
+ hPutStrLn output $ "\n=== ANÁLISE SEMÂNTICA " ++ status ++ " ==="
+ hPutStrLn output mensagens
+ hPutStrLn output $ show resultado
 
  hClose input 
  hClose output
