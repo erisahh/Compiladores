@@ -130,12 +130,12 @@ ExpressaoRelacional : ExpressaoAritmetica '>=' ExpressaoAritmetica {Rge $1 $3}
                     | ExpressaoAritmetica '<' ExpressaoAritmetica {Rlt $1 $3}
 
 AtribSimples : ID '=' ExpressaoAritmetica {Atrib $1 $3}
-             | ID '=' LITERAL {Atrib $1 (Lit $3)}
+             | ID '=' LITERAL {Atrib $1 (Const (CString $3))}
 
 CmdAtrib : AtribSimples ';' {$1}
 
 CmdEscrita : 'print' '(' ExpressaoAritmetica ')' ';' {Imp $3}
-           | 'print' '(' LITERAL ')' ';' {Imp (Lit $3)} 
+           | 'print' '(' LITERAL ')' ';' {Imp (Const (CString $3))} 
 
 CmdLeitura : 'read' '(' ID ')' ';' {Leitura $3} 
 
@@ -161,7 +161,7 @@ EA : EA '*' E {Mul $1 $3}
 
 E : CINT {Const (CInt $1)}
     | CDOUBLE {Const (CDouble $1)}
-    | LITERAL {Lit $1}
+    | LITERAL {Const (CString $1)}
     | ID {IdVar $1}
     | '(' ExpressaoAritmetica ')' {$2}
     | ID '(' ListaParametros ')' {Chamada $1 $3}

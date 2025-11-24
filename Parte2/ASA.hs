@@ -12,6 +12,7 @@ data Tipo =
 data TCons =
     CDouble Double 
     | CInt Int 
+    | CString String
     deriving Show
 
 data Expr =
@@ -23,7 +24,6 @@ data Expr =
     | Const TCons
     | IdVar String
     | Chamada Id [Expr]
-    | Lit String 
     | IntDouble Expr 
     | DoubleInt Expr 
     deriving Show
