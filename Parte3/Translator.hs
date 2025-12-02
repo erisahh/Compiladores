@@ -1,4 +1,7 @@
+module Translator where
+
 import Control.Monad.State
+import Lex
 import ASA
 
 novoLabel::State Int String 
@@ -14,11 +17,22 @@ genMainCab s l = return (".method public static main([Ljava/lang/String;)V" ++
                          "\n\t.limit stack " ++ show s ++
                          "\n\t.limit locals " ++ show l ++ "\n\n")
 
+-- ATRIBUIÇÕES
+genInt i | i <= 5 			 = "iconst_"++show i++"\n"
+		 | i > 5 && i <= 128 = "bipush "++show i++"\n"
+		 | otherwise         = "ldc "++show i++"\n"
+
+genDouble d = "ldc2_w "++show d++"\n"
+
+genString s = "ldc "++s++"\n"
+
 
 -- EXPRESSÕES LÓGICAS
+genExprL String -> [Var] -> [Funcao] -> String -> String -> ExprL -> String Int State
+
 -- and
 genExprL c tab fun v f (And e1 e2) = do 
-    l1 <- novoLabel 
+	l1 <- novoLabel 
     e1' <- genExprL c tab fun l1 f e1
     e2' <- genExprL c tab fun v f e2
     return (e1'++l1++":\n"++e2')
@@ -40,8 +54,9 @@ genExprL c tab fun v f (Rel e1) = do
     e1' <- genExprR c tab fun v f e1
     return (e1')
 
+-- EXPRESSÕES RELACIONAIS
+genExprR String -> [Var] -> [Funcao] -> String -> String -> ExprR -> String Int State
 
--- EXPRESSÕES REGULARES
 -- req
 genExprR c tab fun v f (Req e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
@@ -83,11 +98,15 @@ genRel t1 t2 v op | t1==TInt    = ("if_icmp"++op++v)
                   | t1==TString = ("if_acmp"++op++v) 
                   | t1==TDouble = ("dcmpg\nif"++op++v)
 
-
 -- EXPRESSÕES GERAIS
+genExpr String -> [Var] -> [Funcao] -> Expr -> State Int String
+
 -- const
 genExpr c tab fun (Const (CInt i)) = return (TInt, genInt i)
+genExpr c tab fun (Const (CDouble i)) = return (TDouble, genDouble i)
+genExpr c tab fun (Const (CString i)) = return (TString, genString i)
 
+-- OPERAÇÕES
 -- add
 genExpr c tab fun (Add e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1 
@@ -130,13 +149,23 @@ genExpr c tab fun (DoubleInt e1 e2) = do
     (t2, e2') <- genExpr c tab fun e2 
     return (t1, e1' ++ e2' ++ genOp t1 "2i")
 
-
--- OPERAÇÕES
 genOp :: Tipo -> String -> String
 genOp t1 op | t1==TInt    = ("i"++op)
             | t1==TDouble = ("d"++op)
 
 -- COMANDOS
+genCmd String -> [Var] -> [Funcao] -> Comando -> State Int String
+
+-- if-else
+genCmd c tab fun (If e vb fb) = do
+	lv <- novoLabel
+	lf <- novoLabel
+	e' <- genExprL c tab fun lv lf e
+	vb' <- genBloco c tab fun vb
+	fb' <= genBloco c tab fun fb
+	return (e'++lv++":\n"++vb'"\n"++lf++":\n"++fb'++"\n")
+
+-- while
 genCmd c tab fun (While e b) = do 
     li <- novoLabel 
     lv <- novoLabel 
@@ -144,6 +173,25 @@ genCmd c tab fun (While e b) = do
     e' <- genExprL c tab fun lv lf e
     b' <- genBloco c tab fun b
     return (li++":\n"++e'++lv++":\n"++b'++"\tgoto "++li++"\n"++lf++":\n")
--- todo
+
+-- atrib
+genCmd c tab fun (Atrib id e) = do
+	
+
+-- for
+genCmd c tab fun (For c1 el c2 b) = do
+		
+
+-- read
+-- imp
+-- return
+-- proc
+
+genBloco :: String -> [Var] -> [Funcao] -> Bloco -> State Int String
+genBloco c tab fun [] = ""
+genBloco c tab fun (cmd:bloco) do =
+	cmd' = genCmg c tab fun cmd
+	bloco' = genBloco c tab fun bloco
+	return (cmd'++bloco)
 
 gerar nome p = fst $ runState (genProg nome p) 0
