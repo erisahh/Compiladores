@@ -31,13 +31,13 @@ genScannerInit nome = "new java/util/Scanner\n" ++
 -- tipos
 genTipo :: Tipo -> String
 genTipo t | t == TInt    = "I"
-		  | t == TDouble = "D"
-		  | t == TString = "Ljava/lang/String;"
+          | t == TDouble = "D"
+          | t == TString = "Ljava/lang/String;"
           | t == TVoid   = "V"
 
-genInt i | i <= 5 			 = "iconst_" ++ show i ++ "\n"
-		 | i > 5 && i <= 128 = "bipush " ++ show i ++ "\n"
-		 | otherwise         = "ldc " ++ show i ++ "\n"
+genInt i | i <= 5             = "iconst_" ++ show i ++ "\n"
+         | i > 5 && i <= 128  = "bipush " ++ show i ++ "\n"
+         | otherwise          = "ldc " ++ show i ++ "\n"
 
 genDouble d = "ldc2_w " ++ show d ++ "\n"
 
@@ -56,11 +56,11 @@ enumVars ((id :#: (t, _)) : vrs) val = ((id:#:(t, val)) : (enumVars vrs (val+1))
 
 -- gerar bloco
 genBloco :: String -> [Var] -> [Funcao] -> Bloco -> State Int String
-genBloco c tab fun [] = ""
-genBloco c tab fun (cmd:bloco) do =
-	cmd' = genCmd c tab fun cmd
-	bloco' = genBloco c tab fun bloco
-	return (cmd' ++ bloco)
+genBloco c tab fun [] = return ""
+genBloco c tab fun (cmd:bloco) = do
+    cmd' <- genCmd c tab fun cmd
+    bloco' <- genBloco c tab fun bloco
+    return (cmd' ++ bloco')
 
 -- limit local (talvez não precise)
 getLimitLocal :: [Var] -> Int
@@ -81,9 +81,9 @@ genFuncCall (v : vrs) = do
 listGenExpr :: String -> [Var] -> [Funcao] -> [Expr] -> State Int String
 listGenExpr _ _ _ [] = ""
 listGenExpr c tab fun (e : es) = do
-	(_, s) <- genExpr c tab fun e
-	s' <- listGenExpr c tab fun es
-	return (s ++ s')
+    (_, s) <- genExpr c tab fun e
+    s' <- listGenExpr c tab fun es
+    return (s ++ s')
 
 -- gerar função
 genFuncs:: String -> [Funcao] -> [Funcao] -> [(Id, [Var], Bloco)] -> State Int String
@@ -103,7 +103,7 @@ genFuncs c ttl (f @ (id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
 searchVar :: Id -> [Var] -> State Int (Tipo, Int)
 searchVar _ [] = return (TVoid, 0)
 searchVar id ((idv :#: (t, nm)) : vs) | id==idv   = return (t, nm)
-									  | otherwise = searchVar id vs
+                                      | otherwise = searchVar id vs
                         
 loadVar :: Id -> [Var] -> State Int (Tipo, String)
 loadVar _ [] = return (TVoid, "")
@@ -196,7 +196,7 @@ genExprL String -> [Var] -> [Funcao] -> String -> String -> ExprL -> State Int S
 
 -- and
 genExprL c tab fun v f (And e1 e2) = do 
-	l1 <- novoLabel 
+    l1 <- novoLabel 
     e1' <- genExprL c tab fun l1 f e1
     e2' <- genExprL c tab fun v f e2
     return (e1' ++ l1 ++ ":\n" ++ e2')
@@ -274,12 +274,12 @@ genCmd String -> [Var] -> [Funcao] -> Comando -> State Int String
 
 -- if-else
 genCmd c tab fun (If e vb fb) = do
-	lv <- novoLabel
-	lf <- novoLabel
-	e' <- genExprL c tab fun lv lf e
-	vb' <- genBloco c tab fun vb
-	fb' <= genBloco c tab fun fb
-	return (e' ++ lv ++ ":\n" ++ vb'"\n" ++ lf ++ ":\n" ++ fb' ++ "\n")
+    lv <- novoLabel
+    lf <- novoLabel
+    e' <- genExprL c tab fun lv lf e
+    vb' <- genBloco c tab fun vb
+    fb' <= genBloco c tab fun fb
+    return (e' ++ lv ++ ":\n" ++ vb'"\n" ++ lf ++ ":\n" ++ fb' ++ "\n")
 
 -- while
 genCmd c tab fun (While e b) = do 
@@ -291,36 +291,36 @@ genCmd c tab fun (While e b) = do
     return (li ++ ":\n" ++ e' ++ lv ++ ":\n" ++ b' ++ "\tgoto " ++ li ++ "\n" ++ lf ++ ":\n")
 
 -- for
-	
+    
 -- atrib
 genCmd c tab fun (Atrib id e) = do
-	(te, s)	<- Expr c tab fun e
-	(tv, nm) <- searchVar id tab
-	return (s ++ (genVarStore tv nm))
+    (te, s) <- Expr c tab fun e
+    (tv, nm) <- searchVar id tab
+    return (s ++ (genVarStore tv nm))
 
 -- read
 genCmd c tab fun (Leitura id) = do
     (tv, nm) <- searchVar id tab
     return ("getstatic " ++ c ++ "/scanner Ljava/util/Scanner;\ninvokevirtual java/util/Scanner/" ++ genTipoRead tv ++ "\n" ++ genVarStore tv nm)
-	
+    
 -- imp
 genCmd c tab fun (Imp e) = do
-	(t1, e') <= Expr c tab fun e
-	return ("getstatic java/lang/System/out Ljava/io/PrintStream;\n" ++ e' ++ "invokevirtual java/io/PrintStream/println(" ++ genTipo t1 ++ ")V\n")
+    (t1, e') <= Expr c tab fun e
+    return ("getstatic java/lang/System/out Ljava/io/PrintStream;\n" ++ e' ++ "invokevirtual java/io/PrintStream/println(" ++ genTipo t1 ++ ")V\n")
 
 -- return
 genReturn :: Tipo -> String
 genReturn t | t == TInt    = "ireturn\n"
-			| t = TDouble  = "dreturn\n"
-			| t == TString = "areturn\n"
-			| otherwise    = "return\n"
+            | t = TDouble  = "dreturn\n"
+            | t == TString = "areturn\n"
+            | otherwise    = "return\n"
 
 genCmd c tab fun (Return e) = do
-	case e of
-	Just e' -> do
-		(t1, e1) <- Expr c tab fun e
-		return (genReturn ++ t1)
-	Nothing -> return (genReturn Tvoid)
+    case e of
+    Just e' -> do
+        (t1, e1) <- Expr c tab fun e
+        return (genReturn ++ t1)
+    Nothing -> return (genReturn Tvoid)
 
 -- proc
 genCmd c tab fun (Proc id es) = do
@@ -328,6 +328,6 @@ genCmd c tab fun (Proc id es) = do
     params <- genFuncCall vs
     es' <- listGenExpr c tab fun es
     let invoke = "invokestatic " ++ id ++ "(" ++ params ++ ")" ++ (genTipo tf) ++ "\n"
-    return (es' ++ invoke)	
+    return (es' ++ invoke)    
 
 gerar nome p = fst $ runState (genProg nome p) 0
