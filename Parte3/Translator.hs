@@ -86,9 +86,9 @@ listGenExpr c tab fun (e : es) = do
     return (s ++ s')
 
 -- gerar função
-genFuncs:: String -> [Funcao] -> [Funcao] -> [(Id, [Var], Bloco)] -> State Int String
+genFuncs :: String -> [Funcao] -> [Funcao] -> [(Id, [Var], Bloco)] -> State Int String
 genFuncs _ _ [] [] = return ""
-genFuncs c ttl (f @ (id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
+genFuncs c ttl (f@(id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
     let vrs' = enumVars vrs 0
     cal <- genFuncCall par
     let cab = (".method public static " ++ nm ++ "(" ++ cal ++ ")" ++
@@ -128,7 +128,7 @@ searchFunc id (f@(idf :->: (_,_)) : fs) | id==idf   = return f
                                         | otherwise = searchFunc id fs
 
 -- PRINCIPAL
-genProg:: String -> Programa -> State Int String
+genProg :: String -> Programa -> State Int String
 genProg nome (Prog fun funcBlocs vars main) = do
     cab <- genCab nome
     funcs' <- genFuncs nome fun fun funcBlocs
@@ -139,7 +139,7 @@ genProg nome (Prog fun funcBlocs vars main) = do
 
 
 -- EXPRESSÕES GERAIS
-genExpr String -> [Var] -> [Funcao] -> Expr -> State Int String
+genExpr :: String -> [Var] -> [Funcao] -> Expr -> State Int String
 
 -- const
 genExpr c tab fun (Const (CInt i)) = return (TInt, genInt i)
