@@ -1,0 +1,11 @@
+[TINT,ID "somatorio",LPAR,TINT,ID "n",RPAR,LBRA,TINT,ID "i",SEMI,TDOUBLE,ID "s",SEMI,ID "s",ASSIGN,CINT 0,SEMI,FOR,LPAR,ID "i",ASSIGN,CINT 0,SEMI,ID "i",RL,ID "n",SEMI,ID "i",ASSIGN,ID "i",ADD,CINT 1,RPAR,LBRA,ID "s",ASSIGN,ID "s",ADD,ID "i",SEMI,RBRA,RETURN,ID "s",SEMI,RBRA,LBRA,TINT,ID "a",COMMA,ID "ans",SEMI,READ,LPAR,ID "a",RPAR,SEMI,ID "ans",ASSIGN,ID "somatorio",LPAR,ID "a",RPAR,SEMI,PRINT,LPAR,ID "ans",RPAR,SEMI,RETURN,SEMI,RBRA]
+
+
+Prog ["somatorio" :->: (["n" :#: (TInt,0)],TInt)] [("somatorio",["n" :#: (TInt,0),"i" :#: (TInt,0),"s" :#: (TDouble,0)],[Atrib "s" (Const (CInt 0)),For (Atrib "i" (Const (CInt 0))) (Rel (Rlt (IdVar "i") (IdVar "n"))) (Atrib "i" (Add (IdVar "i") (Const (CInt 1)))) [Atrib "s" (Add (IdVar "s") (IdVar "i"))],Ret (Just (IdVar "s"))])] ["a" :#: (TInt,0),"ans" :#: (TInt,0)] [Leitura "a",Atrib "ans" (Chamada "somatorio" [IdVar "a"]),Imp (IdVar "ans"),Ret Nothing]
+
+
+[OK]
+Advertencia:Conversão TDouble -> TInt no retorno: pode haver perda de precisão
+Advertencia:Conversão implícita TInt -> TDouble aplicada ao operando direito
+
+Prog ["somatorio" :->: (["n" :#: (TInt,0)],TInt)] [("somatorio",["s" :#: (TDouble,0),"i" :#: (TInt,0),"n" :#: (TInt,0)],[Atrib "s" (IntDouble (Const (CInt 0))),For (Atrib "i" (Const (CInt 0))) (Rel (Rlt (IdVar "i") (IdVar "n"))) (Atrib "i" (Add (IdVar "i") (Const (CInt 1)))) [Atrib "s" (Add (IdVar "s") (IntDouble (IdVar "i")))],Ret (Just (DoubleInt (IdVar "s")))])] ["ans" :#: (TInt,0),"a" :#: (TInt,0)] [Leitura "a",Atrib "ans" (Chamada "somatorio" [IdVar "a"]),Imp (IdVar "ans"),Ret Nothing]

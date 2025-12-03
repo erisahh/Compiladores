@@ -17,7 +17,7 @@ main = do
  output <- openFile "output.j--" WriteMode
  hSetEncoding output utf8  
 
- bytecode <- openFile "bytecode.txt" WriteMode
+ bytecode <- openFile "Prog.j" WriteMode
  hSetEncoding bytecode utf8
 
  let tokens = L.alexScanTokens contents

@@ -40,7 +40,7 @@ genInt i | i <= 5             = "iconst_" ++ show i ++ "\n"
 
 genDouble d = "ldc2_w " ++ show d ++ "\n"
 
-genString s = "ldc " ++ s ++ "\n"
+genString s = "ldc \"" ++ s ++ "\"\n"
 
 -- tipos read
 genTipoRead :: Tipo -> String
@@ -319,7 +319,16 @@ genCmd c tab fun (While e b) = do
     return (li ++ ":\n" ++ e' ++ lv ++ ":\n" ++ b' ++ "\tgoto " ++ li ++ "\n" ++ lf ++ ":\n")
 
 -- for
-    
+genCmd c tab fun (For c1 el c2 b) = do
+    li <- novoLabel
+    lv <- novoLabel
+    lf <- novoLabel
+    c1' <- genCmd c tab fun c1
+    el' <- genExprL c tab fun lv lf el
+    c2' <- genCmd c tab fun c2
+    b' <- genBloco c tab fun b
+    return (c1' ++ li ++ ":\n" ++ el' ++ lv ++ ":\n" ++ b' ++ c2' ++ "\tgoto " ++ li ++ "\n" ++ lf ++ ":\n")
+
 -- atrib
 genCmd c tab fun (Atrib id e) = do
     (te, s)  <- genExpr c tab fun e
