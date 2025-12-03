@@ -63,7 +63,7 @@ genBloco c tab fun (cmd:bloco) = do
 
 -- limit local (talvez não precise)
 getLimitLocal :: [Var] -> Int
-getLimitLocal [] = 0;
+getLimitLocal [] = 0
 getLimitLocal (_ :#: (t, _) : vrs) | t == TDouble = 2+getLimitLocal vrs
                                    | otherwise    = 1+getLimitLocal vrs
 
@@ -78,7 +78,7 @@ genFuncCall (v : vrs) = do
 
 -- listar expressões
 listGenExpr :: String -> [Var] -> [Funcao] -> [Expr] -> State Int String
-listGenExpr _ _ _ [] = ""
+listGenExpr _ _ _ [] = return ""
 listGenExpr c tab fun (e : es) = do
     (_, s) <- genExpr c tab fun e
     s' <- listGenExpr c tab fun es
@@ -113,10 +113,10 @@ searchVar id ((idv :#: (t, nm)) : vs) | id==idv   = return (t, nm)
                         
 loadVar :: Id -> [Var] -> State Int (Tipo, String)
 loadVar _ [] = return (TVoid, "")
-loadVar id ((idv :#: (t, nm)) : vs) | id==idv && t==TInt    = return (t, "iload" ++ show nm ++ "\n")
-                                    | id==idv && t==TDouble = return (t, "dload" ++ show nm ++ "\n")
-                                    | id==idv && t==TString = return (t, "aload" ++ nm ++ "\n")
-                                    | otherwise             = loadVar idv vs
+loadVar id ((idv :#: (t, nm)) : vs) | id==idv && t==TInt    = return (t, "iload " ++ show nm ++ "\n")
+                                    | id==idv && t==TDouble = return (t, "dload " ++ show nm ++ "\n")
+                                    | id==idv && t==TString = return (t, "aload " ++ show nm ++ "\n")
+                                    | otherwise             = loadVar id vs
 
 -- store
 genVarStore :: Tipo -> Int -> String
@@ -147,46 +147,46 @@ genProg nome (Prog fun funcBlocs vars main) = do
 -- EXPRESSÕES RELACIONAIS
 genExprR :: String -> [Var] -> [Funcao] -> String -> String -> ExprR -> State Int String
 
-genRel :: Tipo -> Tipo -> String -> String
-genRel t1 t2 v op | t1==TInt    = ("if_icmp" ++ op ++ v)
-                  | t1==TString = ("if_acmp" ++ op ++ v) 
-                  | t1==TDouble = ("dcmpg\nif" ++ op ++ v)
+genRel :: Tipo -> String -> String -> String
+genRel t1 v op | t1==TInt    = "if_icmp" ++ op ++ " " ++ v ++ "\n"
+               | t1==TString = "if_acmp" ++ op ++ " " ++ v ++ "\n"
+               | t1==TDouble = "dcmpg\nif" ++ op ++ " " ++ v ++ "\n"
 
 -- req
 genExprR c tab fun v f (Req e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
     (t2, e2') <- genExpr c tab fun e2
-    return (e1' ++ e2' ++ genRel t1 t2 v "eq" ++ "\tgoto " ++ f ++ "\n")
+    return (e1' ++ e2' ++ genRel t1 v "eq" ++ "\tgoto " ++ f ++ "\n")
 
 -- rdif
 genExprR c tab fun v f (Rdif e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
     (t2, e2') <- genExpr c tab fun e2
-    return (e1' ++ e2' ++ genRel t1 t2 v "ne" ++ "\tgoto " ++ f ++ "\n")
+    return (e1' ++ e2' ++ genRel t1 v "ne" ++ "\tgoto " ++ f ++ "\n")
 
 -- rlt
 genExprR c tab fun v f (Rlt e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
     (t2, e2') <- genExpr c tab fun e2
-    return (e1' ++ e2' ++ genRel t1 t2 v "lt" ++ "\tgoto " ++ f ++ "\n")
+    return (e1' ++ e2' ++ genRel t1 v "lt" ++ "\tgoto " ++ f ++ "\n")
 
 -- rgt
 genExprR c tab fun v f (Rgt e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
     (t2, e2') <- genExpr c tab fun e2
-    return (e1' ++ e2' ++ genRel t1 t2 v "gt" ++ "\tgoto " ++ f ++ "\n")
+    return (e1' ++ e2' ++ genRel t1 v "gt" ++ "\tgoto " ++ f ++ "\n")
 
 -- rle
 genExprR c tab fun v f (Rle e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
     (t2, e2') <- genExpr c tab fun e2
-    return (e1' ++ e2' ++ genRel t1 t2 v "le" ++ "\tgoto " ++ f ++ "\n")
+    return (e1' ++ e2' ++ genRel t1 v "le" ++ "\tgoto " ++ f ++ "\n")
 
 -- rge
 genExprR c tab fun v f (Rge e1 e2) = do 
     (t1, e1') <- genExpr c tab fun e1
     (t2, e2') <- genExpr c tab fun e2
-    return (e1' ++ e2' ++ genRel t1 t2 v "ge" ++ "\tgoto " ++ f ++ "\n")
+    return (e1' ++ e2' ++ genRel t1 v "ge" ++ "\tgoto " ++ f ++ "\n")
 
 
 -- EXPRESSÕES LÓGICAS
@@ -219,12 +219,12 @@ genExprL c tab fun v f (Rel e1) = do
 
 -- OPERAÇÕES
 genOp :: Tipo -> String -> String
-genOp t1 op | t1==TInt    = ("i" ++ op)
-            | t1==TDouble = ("d" ++ op)
+genOp t1 op | t1==TInt    = "i" ++ op ++ "\n"
+            | t1==TDouble = "d" ++ op ++ "\n"
 
 
 -- EXPRESSÕES GERAIS
-genExpr :: String -> [Var] -> [Funcao] -> Expr -> State Int String
+genExpr :: String -> [Var] -> [Funcao] -> Expr -> State Int (Tipo, String)
 
 -- const
 genExpr c tab fun (Const (CInt i)) = return (TInt, genInt i)
@@ -263,15 +263,24 @@ genExpr c tab fun (Neg e1) = do
 -- intdouble
 genExpr c tab fun (IntDouble e1) = do 
     (t1, e1') <- genExpr c tab fun e1 
-    return (t1, e1' ++ genOp t1 "2d")
+    return (TDouble, e1' ++ "i2d\n")
 
 -- doubleint
 genExpr c tab fun (DoubleInt e1) = do 
     (t1, e1') <- genExpr c tab fun e1 
-    return (t1, e1' ++ genOp t1 "2i")
+    return (TInt, e1' ++ "d2i\n")
 
 -- idvar
-genExpr c tab fun (IdVar id) = (loadVar id tab)
+genExpr c tab fun (IdVar id) = loadVar id tab
+
+-- chamada de função
+genExpr c tab fun (Chamada id es) = do
+    (_ :->: (vs, tf)) <- searchFunc id fun
+    params <- genFuncCall vs
+    es' <- listGenExpr c tab fun es
+    let invoke = "invokestatic " ++ c ++ "/" ++ id ++ "(" ++ params ++ ")" ++ (genTipo tf) ++ "\n"
+    return (tf, es' ++ invoke)
+
 
 -- COMANDOS
 genCmd :: String -> [Var] -> [Funcao] -> Comando -> State Int String
@@ -280,10 +289,11 @@ genCmd :: String -> [Var] -> [Funcao] -> Comando -> State Int String
 genCmd c tab fun (If e vb fb) = do
     lv  <- novoLabel
     lf  <- novoLabel
+    lend <- novoLabel
     e'  <- genExprL c tab fun lv lf e
     vb' <- genBloco c tab fun vb
     fb' <- genBloco c tab fun fb
-    return (e' ++ lv ++ ":\n" ++ vb'"\n" ++ lf ++ ":\n" ++ fb' ++ "\n")
+    return (e' ++ lv ++ ":\n" ++ vb' ++ "\tgoto " ++ lend ++ "\n" ++ lf ++ ":\n" ++ fb' ++ lend ++ ":\n")
 
 -- while
 genCmd c tab fun (While e b) = do 
@@ -300,7 +310,7 @@ genCmd c tab fun (While e b) = do
 genCmd c tab fun (Atrib id e) = do
     (te, s)  <- genExpr c tab fun e
     (tv, nm) <- searchVar id tab
-    return (s ++ (genVarStore tv nm))
+    return (s ++ genVarStore tv nm)
 
 -- read
 genCmd c tab fun (Leitura id) = do
@@ -316,8 +326,8 @@ genCmd c tab fun (Imp e) = do
 genCmd c tab fun (Ret e) = do
     case e of
         Just e' -> do
-            (t1, e1) <- genExpr c tab fun e
-            return (genReturn ++ t1)
+            (t1, e1) <- genExpr c tab fun e'
+            return (e1 ++ genReturn t1)
         Nothing -> return (genReturn TVoid)
 
 -- proc
@@ -325,7 +335,7 @@ genCmd c tab fun (Proc id es) = do
     (_ :->: (vs, tf)) <- searchFunc id fun
     params <- genFuncCall vs
     es' <- listGenExpr c tab fun es
-    let invoke = "invokestatic " ++ id ++ "(" ++ params ++ ")" ++ (genTipo tf) ++ "\n"
+    let invoke = "invokestatic " ++ c ++ "/" ++ id ++ "(" ++ params ++ ")" ++ (genTipo tf) ++ "\n"
     return (es' ++ invoke)    
 
 gerar nome p = fst $ runState (genProg nome p) 0
