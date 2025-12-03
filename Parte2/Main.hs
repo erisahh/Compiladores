@@ -6,6 +6,8 @@ import qualified Lex as L
 import Parser as P
 import ASA
 import Semantic 
+import Translator
+import Control.Monad.State
 
 main :: IO ()
 main = do 
@@ -14,6 +16,9 @@ main = do
 
  output <- openFile "output.j--" WriteMode
  hSetEncoding output utf8  
+
+ bytecode <- openFile "bytecode.txt" WriteMode
+ hSetEncoding bytecode utf8
 
  let tokens = L.alexScanTokens contents
 
@@ -43,9 +48,14 @@ main = do
  print resultado
  putStrLn ""
 
- hPutStrLn output $ "\n=== ANÁLISE SEMÂNTICA " ++ status ++ " ==="
+ hPutStrLn output $ status
  hPutStrLn output mensagens
  hPutStrLn output $ show resultado
+
+ -- CÓDIGO DE MÁQUINA
+ let (res, i) = runState (genProg "Prog" resultado) 0
+
+ hPutStrLn bytecode res
 
  hClose input 
  hClose output

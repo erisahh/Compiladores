@@ -11,11 +11,20 @@ novoLabel = do
     return ("l" ++ show n)
 
 genCab nome = return (".class public " ++ nome ++ 
-                      "\n.super java/lang/Object\n\n.method public <init>()V\n\taload_0\n\tinvokenonvirtual java/lang/Object/<init>()V\n\treturn\n.end method\n\n")
+                      "\n.super java/lang/Object\n" ++
+                      ".field private static scanner Ljava/util/Scanner;\n\n" ++
+                      ".method public <init>()V\n\taload_0\n\tinvokenonvirtual java/lang/Object/<init>()V\n\treturn\n.end method\n\n")
 
 genMainCab s l = return (".method public static main([Ljava/lang/String;)V" ++
                          "\n\t.limit stack " ++ show s ++
                          "\n\t.limit locals " ++ show l ++ "\n\n")
+
+genScannerInit nome = "new java/util/Scanner\n" ++
+                      "dup\n" ++
+                      "getstatic java/lang/System/in Ljava/io/InputStream;\n" ++
+                      "invokespecial java/util/Scanner/<init>(Ljava/io/InputStream;)V\n" ++
+                      "putstatic " ++ nome ++ "/scanner Ljava/util/Scanner;\n"
+
 
 -- FUNÇÕES AUXILIARES
 
@@ -33,6 +42,12 @@ genInt i | i <= 5 			 = "iconst_" ++ show i ++ "\n"
 genDouble d = "ldc2_w " ++ show d ++ "\n"
 
 genString s = "ldc " ++ s ++ "\n"
+
+-- tipos read
+genTipoRead :: Tipo -> String
+genTipoRead t | t == TInt    = "nextInt()I"
+              | t == TDouble = "nextDouble()D"
+              | t == TString = "nextLine()Ljava/lang/String;"
 
 -- enumerar vars
 enumVars :: [Var] -> Int -> [Var]
@@ -85,10 +100,17 @@ genFuncs c ttl (f @ (id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
     return (cab ++ bloc' ++ ".end method\n"++ rst)
 
 -- busca variável
-searchVar :: Id -> [Var] -> State Int (Tipo, String)
+searchVar :: Id -> [Var] -> State Int (Tipo, Int)
 searchVar _ [] = return (TVoid, 0)
-searchVar id ((idv :#: (t, nome)) vs) | id==idv = return (t, nome)
+searchVar id ((idv :#: (t, nm)) : vs) | id==idv   = return (t, nm)
 									  | otherwise = searchVar id vs
+                        
+loadVar :: Id -> [Var] -> State Int (Tipo, String)
+loadVar _ [] = return (TVoid, "")
+loadVar id ((idv :#: (t, nm)) : vs) | id==idv && t==TInt    = return (t, "iload" ++ show nm ++ "\n")
+                                    | id==idv && t==TDouble = return (t, "dload" ++ show nm ++ "\n")
+                                    | id==idv && t==TString = return (t, "aload" ++ nm ++ "\n")
+                                    | otherwise             = loadVar idv vs
 
 -- store
 genVarStore :: Tipo -> Int -> String
@@ -108,10 +130,12 @@ searchFunc id (f@(idf :->: (_,_)) : fs) | id==idf   = return f
 -- PRINCIPAL
 genProg:: String -> Programa -> State Int String
 genProg nome (Prog fun funcBlocs vars main) = do
+    cab <- genCab nome
     funcs' <- genFuncs nome fun fun funcBlocs
     let vars' = enumVars vars 0
+    mainCab <- genMainCab 15 (getLimitLocal vars')
     main' <- genBloco nome vars' fun main
-    return ((genCab nome) ++ funcs' ++ (genMainCab 15 (getLimitLocal vars')) ++ main' ++ ".end method\n")
+    return (cab ++ funcs' ++ mainCab ++ genScannerInit nome ++ main' ++ "\treturn\n.end method\n")
 
 
 -- EXPRESSÕES GERAIS
@@ -242,6 +266,8 @@ genExpr c tab fun (DoubleInt e1 e2) = do
     (t2, e2') <- genExpr c tab fun e2 
     return (t1, e1' ++ e2' ++ genOp t1 "2i")
 
+-- idvar
+genExpr c tab fun (IdVar id) = (loadVar id tab)
 
 -- COMANDOS
 genCmd String -> [Var] -> [Funcao] -> Comando -> State Int String
@@ -274,10 +300,9 @@ genCmd c tab fun (Atrib id e) = do
 
 -- read
 genCmd c tab fun (Leitura id) = do
-	(tv, nm) <- searchVar id tab
-	return ("getstatic java/lang/System/out Ljava/io/InputStream;\n" ++ "invokevirtual java/io/InputStream/read()" ++ genTipo tv ++ "\n")
-		
-
+    (tv, nm) <- searchVar id tab
+    return ("getstatic " ++ c ++ "/scanner Ljava/util/Scanner;\ninvokevirtual java/util/Scanner/" ++ genTipoRead tv ++ "\n" ++ genVarStore tv nm)
+	
 -- imp
 genCmd c tab fun (Imp e) = do
 	(t1, e') <= Expr c tab fun e
