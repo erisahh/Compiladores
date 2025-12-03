@@ -317,10 +317,10 @@ genReturn t | t == TInt    = "ireturn\n"
 
 genCmd c tab fun (Return e) = do
     case e of
-    Just e' -> do
-        (t1, e1) <- Expr c tab fun e
-        return (genReturn ++ t1)
-    Nothing -> return (genReturn Tvoid)
+        Just e' -> do
+            (t1, e1) <- Expr c tab fun e
+            return (genReturn ++ t1)
+        Nothing -> return (genReturn Tvoid)
 
 -- proc
 genCmd c tab fun (Proc id es) = do
