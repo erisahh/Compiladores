@@ -256,10 +256,9 @@ genExpr c tab fun (Div e1 e2) = do
     return (t1, e1' ++ e2' ++ genOp t1 "div")
 
 -- neg
-genExpr c tab fun (Neg e1 e2) = do 
+genExpr c tab fun (Neg e1) = do 
     (t1, e1') <- genExpr c tab fun e1 
-    (t2, e2') <- genExpr c tab fun e2 
-    return (t1, e1' ++ e2' ++ genOp t1 "neg")
+    return (t1, e1' ++ genOp t1 "neg")
 
 -- intdouble
 genExpr c tab fun (IntDouble e1 e2) = do 
@@ -281,11 +280,11 @@ genCmd :: String -> [Var] -> [Funcao] -> Comando -> State Int String
 
 -- if-else
 genCmd c tab fun (If e vb fb) = do
-    lv <- novoLabel
-    lf <- novoLabel
-    e' <- genExprL c tab fun lv lf e
+    lv  <- novoLabel
+    lf  <- novoLabel
+    e'  <- genExprL c tab fun lv lf e
     vb' <- genBloco c tab fun vb
-    fb' <= genBloco c tab fun fb
+    fb' <- genBloco c tab fun fb
     return (e' ++ lv ++ ":\n" ++ vb'"\n" ++ lf ++ ":\n" ++ fb' ++ "\n")
 
 -- while
@@ -301,7 +300,7 @@ genCmd c tab fun (While e b) = do
     
 -- atrib
 genCmd c tab fun (Atrib id e) = do
-    (te, s) <- Expr c tab fun e
+    (te, s)  <- genExpr c tab fun e
     (tv, nm) <- searchVar id tab
     return (s ++ (genVarStore tv nm))
 
@@ -312,14 +311,14 @@ genCmd c tab fun (Leitura id) = do
     
 -- imp
 genCmd c tab fun (Imp e) = do
-    (t1, e') <= Expr c tab fun e
+    (t1, e') <- genExpr c tab fun e
     return ("getstatic java/lang/System/out Ljava/io/PrintStream;\n" ++ e' ++ "invokevirtual java/io/PrintStream/println(" ++ genTipo t1 ++ ")V\n")
 
 -- return
 genCmd c tab fun (Return e) = do
     case e of
         Just e' -> do
-            (t1, e1) <- Expr c tab fun e
+            (t1, e1) <- genExpr c tab fun e
             return (genReturn ++ t1)
         Nothing -> return (genReturn Tvoid)
 
