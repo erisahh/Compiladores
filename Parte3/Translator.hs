@@ -27,7 +27,6 @@ genScannerInit nome = "new java/util/Scanner\n" ++
 
 
 -- FUNÇÕES AUXILIARES
-
 -- tipos
 genTipo :: Tipo -> String
 genTipo t | t == TInt    = "I"
@@ -99,6 +98,13 @@ genFuncs c ttl (f@(id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
     rst <- genFuncs c ttl fs blocs
     return (cab ++ bloc' ++ ".end method\n"++ rst)
 
+-- gerar tipo retorno
+genReturn :: Tipo -> String
+genReturn t | t == TInt    = "ireturn\n"
+            | t == TDouble = "dreturn\n"
+            | t == TString = "areturn\n"
+            | otherwise    = "return\n"
+
 -- busca variável
 searchVar :: Id -> [Var] -> State Int (Tipo, Int)
 searchVar _ [] = return (TVoid, 0)
@@ -137,14 +143,6 @@ genProg nome (Prog fun funcBlocs vars main) = do
     main' <- genBloco nome vars' fun main
     return (cab ++ funcs' ++ mainCab ++ genScannerInit nome ++ main' ++ "\treturn\n.end method\n")
 
-
--- EXPRESSÕES GERAIS
-genExpr :: String -> [Var] -> [Funcao] -> Expr -> State Int String
-
--- const
-genExpr c tab fun (Const (CInt i)) = return (TInt, genInt i)
-genExpr c tab fun (Const (CDouble i)) = return (TDouble, genDouble i)
-genExpr c tab fun (Const (CString i)) = return (TString, genString i)
 
 -- EXPRESSÕES RELACIONAIS
 genExprR :: String -> [Var] -> [Funcao] -> String -> String -> ExprR -> State Int String
@@ -223,6 +221,15 @@ genExprL c tab fun v f (Rel e1) = do
 genOp :: Tipo -> String -> String
 genOp t1 op | t1==TInt    = ("i" ++ op)
             | t1==TDouble = ("d" ++ op)
+
+
+-- EXPRESSÕES GERAIS
+genExpr :: String -> [Var] -> [Funcao] -> Expr -> State Int String
+
+-- const
+genExpr c tab fun (Const (CInt i)) = return (TInt, genInt i)
+genExpr c tab fun (Const (CDouble i)) = return (TDouble, genDouble i)
+genExpr c tab fun (Const (CString i)) = return (TString, genString i)
 
 -- add
 genExpr c tab fun (Add e1 e2) = do 
@@ -309,12 +316,6 @@ genCmd c tab fun (Imp e) = do
     return ("getstatic java/lang/System/out Ljava/io/PrintStream;\n" ++ e' ++ "invokevirtual java/io/PrintStream/println(" ++ genTipo t1 ++ ")V\n")
 
 -- return
-genReturn :: Tipo -> String
-genReturn t | t == TInt    = "ireturn\n"
-            | t == TDouble  = "dreturn\n"
-            | t == TString = "areturn\n"
-            | otherwise    = "return\n"
-
 genCmd c tab fun (Return e) = do
     case e of
         Just e' -> do
