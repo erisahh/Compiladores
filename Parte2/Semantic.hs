@@ -76,7 +76,7 @@ verificaExpressao funcoes variaveis (Chamada id es) = do
             es' <- verificaChamadas funcoes variaveis f es
             return (tipo, Chamada id es')
 
-
+-- Expressão aritmética
 verificaExpressao funcoes variaveis (Add e1 e2) = verificaExpressaoArit funcoes variaveis Add e1 e2 
 verificaExpressao funcoes variaveis (Sub e1 e2) = verificaExpressaoArit funcoes variaveis Sub e1 e2 
 verificaExpressao funcoes variaveis (Mul e1 e2) = verificaExpressaoArit funcoes variaveis Mul e1 e2 
@@ -107,7 +107,7 @@ verificaExprR funcoes vars (Rdif e1 e2) = verificaExpressaoRel funcoes vars Rdif
 verificaExprR funcoes vars (Rlt e1 e2) = verificaExpressaoRel funcoes vars Rlt e1 e2 
 verificaExprR funcoes vars (Rgt e1 e2) = verificaExpressaoRel funcoes vars Rgt e1 e2
 verificaExprR funcoes vars (Rle e1 e2) = verificaExpressaoRel funcoes vars Rle e1 e2 
-verificaExprR funcoes vars (Rge e1 e2) = verificaExpressaoRel funcoes vars Rge e1 e2 
+verificaExprR funcoes vars (Rge e1 e2) = verificaExpressaoRel funcoes vars Rge e1A e2 
 
 verificaExpressaoRel :: [Funcao] -> [Var] -> (Expr -> Expr -> ExprR) -> Expr -> Expr -> Result ExprR
 verificaExpressaoRel funcoes vars op e1 e2 = do
@@ -137,6 +137,8 @@ verificaExprL funcoes vars (Or e1 e2) = verificaExpressaoBool funcoes vars Or e1
 verificaExprL funcoes vars (Not e1) = verificaExprL funcoes vars e1
 verificaExprL funcoes vars (Rel e1) = pure Rel <*> verificaExprR funcoes vars e1
 
+
+-- VERIFICAÇÃO DE EXPRESSÕES ARITMÉTICAS
 verificaExpressaoArit :: [Funcao] -> [Var] -> (Expr -> Expr -> Expr) -> Expr -> Expr -> Result (Tipo, Expr)
 verificaExpressaoArit funcoes vars op e1 e2 = do
     (t1, e1') <- verificaExpressao funcoes vars e1
@@ -252,7 +254,7 @@ verificaComando funcoes _ vars (Atrib id expr) = do
         Nothing -> do 
             errorMsg $ "Atribuição a variável não declarada: '" ++ id ++ "'"
             return (Atrib id expr)
-        Just t1 -> do
+		Just t1 -> do
             (t2, e2') <- verificaExpressao funcoes vars expr  
             
             if t1 == t2 then
