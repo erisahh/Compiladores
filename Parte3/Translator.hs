@@ -17,6 +17,9 @@ genMainCab s l = return (".method public static main([Ljava/lang/String;)V" ++
                          "\n\t.limit stack " ++ show s ++
                          "\n\t.limit locals " ++ show l ++ "\n\n")
 
+-- FUNÇÕES AUXILIARES
+
+-- tipos
 genTipo :: Tipo -> String
 genTipo t | t == TInt    = "I"
 		  | t == TDouble = "D"
@@ -31,10 +34,12 @@ genDouble d = "ldc2_w " ++ show d ++ "\n"
 
 genString s = "ldc " ++ s ++ "\n"
 
+-- enumerar vars
 enumVars :: [Var] -> Int -> [Var]
 enumVars [] val = []
 enumVars ((id :#: (t, _)) : vrs) val = ((id:#:(t, val)) : (enumVars vrs (val+1)))
 
+-- gerar bloco
 genBloco :: String -> [Var] -> [Funcao] -> Bloco -> State Int String
 genBloco c tab fun [] = ""
 genBloco c tab fun (cmd:bloco) do =
@@ -42,22 +47,33 @@ genBloco c tab fun (cmd:bloco) do =
 	bloco' = genBloco c tab fun bloco
 	return (cmd' ++ bloco)
 
+-- limit local (talvez não precise)
 getLimitLocal :: [Var] -> Int
 getLimitLocal [] = 0;
 getLimitLocal (_ :#: (t, _) : vrs) | t == TDouble = 2+getLimitLocal vrs
-                                | otherwise    = 1+getLimitLocal vrs
+                                   | otherwise    = 1+getLimitLocal vrs
 
+-- gerar chamada de função
 genFuncCall :: [Var] -> State Int String
 genFuncCall [] = return ""
 genFuncCall (v : vrs) = do
-    let (_ :#: (tv,iv)) = v
+    let (_ :#: (tv, iv)) = v
     let st = genTipo tv
     s' <- genFuncCall vrs
     return (st ++ s')
 
+-- listar expressões
+listGenExpr :: String -> [Var] -> [Funcao] -> [Expr] -> State Int String
+listGenExpr _ _ _ [] = ""
+listGenExpr c tab fun (e : es) = do
+	(_, s) <- genExpr c tab fun e
+	s' <- listGenExpr c tab fun es
+	return (s ++ s')
+
+-- gerar função
 genFuncs:: String -> [Funcao] -> [Funcao] -> [(Id, [Var], Bloco)] -> State Int String
 genFuncs _ _ [] [] = return ""
-genFuncs c ttl (f@(id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
+genFuncs c ttl (f @ (id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
     let vrs' = enumVars vrs 0
     cal <- genFuncCall par
     let cab = (".method public static " ++ nm ++ "(" ++ cal ++ ")" ++
@@ -68,14 +84,7 @@ genFuncs c ttl (f@(id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
     rst <- genFuncs c ttl fs blocs
     return (cab ++ bloc' ++ ".end method\n"++ rst)
 
-genProg:: String -> Programa -> State Int String
-genProg nome (Prog fun funcBlocs vars main) = do
-    funcs' <- genFuncs nome fun fun funcBlocs
-    let vars' = enumVars vars 0
-    main' <- genBloco nome vars' fun main
-    return ((genCab nome) ++ funcs' ++ (genMainCab 15 (getLimitLocal vars')) ++ main' ++ ".end method\n")
-
-
+-- busca variável
 searchVar :: Id -> [Var] -> State Int (Tipo, String)
 searchVar _ [] = return (TVoid, 0)
 searchVar id ((idv :#: (t, nome)) vs) | id==idv = return (t, nome)
@@ -90,12 +99,20 @@ genVarStore t nm | t == TInt && 5 < nm                = "istore " ++ show nm ++ 
                  | t == TString                       = "astore " ++ show nm ++ "\n"
                  | otherwise                          = "Erro -> Assign de tipo inválido\n"
 
+-- busca função
 searchFunc :: Id -> [Funcao] -> State Int Funcao
 searchFunc _ [] = return ("" :->: ([], TVoid))
 searchFunc id (f@(idf :->: (_,_)) : fs) | id==idf   = return f
                                         | otherwise = searchFunc id fs
 
-----------------
+-- PRINCIPAL
+genProg:: String -> Programa -> State Int String
+genProg nome (Prog fun funcBlocs vars main) = do
+    funcs' <- genFuncs nome fun fun funcBlocs
+    let vars' = enumVars vars 0
+    main' <- genBloco nome vars' fun main
+    return ((genCab nome) ++ funcs' ++ (genMainCab 15 (getLimitLocal vars')) ++ main' ++ ".end method\n")
+
 
 -- EXPRESSÕES GERAIS
 genExpr String -> [Var] -> [Funcao] -> Expr -> State Int String
@@ -252,14 +269,19 @@ genCmd c tab fun (While e b) = do
 -- atrib
 genCmd c tab fun (Atrib id e) = do
 	(te, s)	<- Expr c tab fun e
-	(tv, nome) <- findVar id tab
-	return (s ++ (genVarStore tv nome))
+	(tv, nm) <- searchVar id tab
+	return (s ++ (genVarStore tv nm))
 
 -- read
+genCmd c tab fun (Leitura id) = do
+	(tv, nm) <- searchVar id tab
+	return ("getstatic java/lang/System/out Ljava/io/InputStream;\n" ++ "invokevirtual java/io/InputStream/read()" ++ genTipo tv ++ "\n")
+		
 
 -- imp
 genCmd c tab fun (Imp e) = do
 	(t1, e') <= Expr c tab fun e
+	return ("getstatic java/lang/System/out Ljava/io/PrintStream;\n" ++ e' ++ "invokevirtual java/io/PrintStream/println(" ++ genTipo t1 ++ ")V\n")
 
 -- return
 genReturn :: Tipo -> String
@@ -272,11 +294,15 @@ genCmd c tab fun (Return e) = do
 	case e of
 	Just e' -> do
 		(t1, e1) <- Expr c tab fun e
-		return (genReturn++t1)
+		return (genReturn ++ t1)
 	Nothing -> return (genReturn Tvoid)
 
 -- proc
-genCmd c tab fun (Proc id [e]) = do
-		
+genCmd c tab fun (Proc id es) = do
+    (_ :->: (vs, tf)) <- searchFunc id fun
+    params <- genFuncCall vs
+    es' <- listGenExpr c tab fun es
+    let invoke = "invokestatic " ++ id ++ "(" ++ params ++ ")" ++ (genTipo tf) ++ "\n"
+    return (es' ++ invoke)	
 
 gerar nome p = fst $ runState (genProg nome p) 0
