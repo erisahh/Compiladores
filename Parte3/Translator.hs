@@ -88,13 +88,20 @@ listGenExpr c tab fun (e : es) = do
 genFuncs :: String -> [Funcao] -> [Funcao] -> [(Id, [Var], Bloco)] -> State Int String
 genFuncs _ _ [] [] = return ""
 genFuncs c ttl (f@(id :->: (par, tipo)) : fs) ((nm, vrs, bloc) : blocs) = do
-    let vrs' = enumVars vrs 0
+    -- Enumerar parâmetros começando de 0
+    let par' = enumVars par 0
+    -- Calcular onde começam as variáveis locais (após os parâmetros)
+    let numParams = getLimitLocal par
+    -- Enumerar variáveis locais começando após os parâmetros
+    let vrs' = enumVars vrs numParams
+    -- Tabela completa: parâmetros + variáveis locais
+    let tab = par' ++ vrs'
     cal <- genFuncCall par
     let cab = (".method public static " ++ nm ++ "(" ++ cal ++ ")" ++
                genTipo tipo ++ "\n" ++ "\n\t.limit stack " ++ show 15 ++ "\n\t.limit locals " ++
-               show (getLimitLocal vrs) ++ "\n\n")
+               show (getLimitLocal tab) ++ "\n\n")
 
-    bloc' <- genBloco c vrs' ttl bloc
+    bloc' <- genBloco c tab ttl bloc
     rst <- genFuncs c ttl fs blocs
     return (cab ++ bloc' ++ ".end method\n"++ rst)
 
