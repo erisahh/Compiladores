@@ -51,7 +51,9 @@ genTipoRead t | t == TInt    = "nextInt()I"
 -- enumerar vars
 enumVars :: [Var] -> Int -> [Var]
 enumVars [] val = []
-enumVars ((id :#: (t, _)) : vrs) val = ((id:#:(t, val)) : (enumVars vrs (val+1)))
+enumVars ((id :#: (t, _)) : vrs) val 
+    | t == TDouble = (id:#:(t, val)) : enumVars vrs (val+2)
+    | otherwise    = (id:#:(t, val)) : enumVars vrs (val+1)
 
 -- gerar bloco
 genBloco :: String -> [Var] -> [Funcao] -> Bloco -> State Int String
@@ -120,18 +122,23 @@ searchVar id ((idv :#: (t, nm)) : vs) | id==idv   = return (t, nm)
                         
 loadVar :: Id -> [Var] -> State Int (Tipo, String)
 loadVar _ [] = return (TVoid, "")
-loadVar id ((idv :#: (t, nm)) : vs) | id==idv && t==TInt    = return (t, "iload " ++ show nm ++ "\n")
-                                    | id==idv && t==TDouble = return (t, "dload " ++ show nm ++ "\n")
-                                    | id==idv && t==TString = return (t, "aload " ++ show nm ++ "\n")
-                                    | otherwise             = loadVar id vs
+loadVar id ((idv :#: (t, nm)) : vs) 
+    | id==idv && t==TInt && nm <= 3    = return (t, "iload_" ++ show nm ++ "\n")
+    | id==idv && t==TInt               = return (t, "iload " ++ show nm ++ "\n")
+    | id==idv && t==TDouble && nm <= 3 = return (t, "dload_" ++ show nm ++ "\n")
+    | id==idv && t==TDouble            = return (t, "dload " ++ show nm ++ "\n")
+    | id==idv && t==TString && nm <= 3 = return (t, "aload_" ++ show nm ++ "\n")
+    | id==idv && t==TString            = return (t, "aload " ++ show nm ++ "\n")
+    | otherwise                        = loadVar id vs
 
 -- store
 genVarStore :: Tipo -> Int -> String
-genVarStore t nm | t == TInt && 5 < nm                = "istore " ++ show nm ++ "\n"
-                 | t == TInt && 0 <= nm && nm <= 5    = "istore_" ++ show nm ++ "\n"
-                 | t == TDouble && 5 < nm             = "dstore " ++ show nm ++ "\n"
-                 | t == TDouble && 0 <= nm && nm <= 5 = "dstore_" ++ show nm ++ "\n"
-                 | t == TString                       = "astore " ++ show nm ++ "\n"
+genVarStore t nm | t == TInt && nm > 3                = "istore " ++ show nm ++ "\n"
+                 | t == TInt && 0 <= nm && nm <= 3    = "istore_" ++ show nm ++ "\n"
+                 | t == TDouble && nm > 3             = "dstore " ++ show nm ++ "\n"
+                 | t == TDouble && 0 <= nm && nm <= 3 = "dstore_" ++ show nm ++ "\n"
+                 | t == TString && nm > 3             = "astore " ++ show nm ++ "\n"
+                 | t == TString && 0 <= nm && nm <= 3 = "astore_" ++ show nm ++ "\n"
                  | otherwise                          = "Erro -> Assign de tipo inválido\n"
 
 -- busca função
@@ -145,8 +152,8 @@ genProg :: String -> Programa -> State Int String
 genProg nome (Prog fun funcBlocs vars main) = do
     cab <- genCab nome
     funcs' <- genFuncs nome fun fun funcBlocs
-    let vars' = enumVars vars 0
-    mainCab <- genMainCab 15 (getLimitLocal vars')
+    let vars' = enumVars vars 1
+    mainCab <- genMainCab 15 (1 + getLimitLocal vars')
     main' <- genBloco nome vars' fun main
     return (cab ++ funcs' ++ mainCab ++ genScannerInit nome ++ main' ++ "\treturn\n.end method\n")
 
