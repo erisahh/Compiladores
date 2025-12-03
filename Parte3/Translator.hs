@@ -261,16 +261,14 @@ genExpr c tab fun (Neg e1) = do
     return (t1, e1' ++ genOp t1 "neg")
 
 -- intdouble
-genExpr c tab fun (IntDouble e1 e2) = do 
+genExpr c tab fun (IntDouble e1) = do 
     (t1, e1') <- genExpr c tab fun e1 
-    (t2, e2') <- genExpr c tab fun e2 
-    return (t1, e1' ++ e2' ++ genOp t1 "2d")
+    return (t1, e1' ++ genOp t1 "2d")
 
 -- doubleint
-genExpr c tab fun (DoubleInt e1 e2) = do 
+genExpr c tab fun (DoubleInt e1) = do 
     (t1, e1') <- genExpr c tab fun e1 
-    (t2, e2') <- genExpr c tab fun e2 
-    return (t1, e1' ++ e2' ++ genOp t1 "2i")
+    return (t1, e1' ++ genOp t1 "2i")
 
 -- idvar
 genExpr c tab fun (IdVar id) = (loadVar id tab)
@@ -320,7 +318,7 @@ genCmd c tab fun (Return e) = do
         Just e' -> do
             (t1, e1) <- genExpr c tab fun e
             return (genReturn ++ t1)
-        Nothing -> return (genReturn Tvoid)
+        Nothing -> return (genReturn TVoid)
 
 -- proc
 genCmd c tab fun (Proc id es) = do
