@@ -311,7 +311,7 @@ genCmd c tab fun (Imp e) = do
 -- return
 genReturn :: Tipo -> String
 genReturn t | t == TInt    = "ireturn\n"
-            | t = TDouble  = "dreturn\n"
+            | t == TDouble  = "dreturn\n"
             | t == TString = "areturn\n"
             | otherwise    = "return\n"
 
