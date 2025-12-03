@@ -4,7 +4,7 @@ import Control.Monad.State
 import Lex
 import ASA
 
-novoLabel::State Int String 
+novoLabel :: State Int String 
 novoLabel = do 
     n <- get
     put (n+1)
@@ -147,7 +147,7 @@ genExpr c tab fun (Const (CDouble i)) = return (TDouble, genDouble i)
 genExpr c tab fun (Const (CString i)) = return (TString, genString i)
 
 -- EXPRESSÕES RELACIONAIS
-genExprR String -> [Var] -> [Funcao] -> String -> String -> ExprR -> State Int String
+genExprR :: String -> [Var] -> [Funcao] -> String -> String -> ExprR -> State Int String
 
 genRel :: Tipo -> Tipo -> String -> String
 genRel t1 t2 v op | t1==TInt    = ("if_icmp" ++ op ++ v)
@@ -192,7 +192,7 @@ genExprR c tab fun v f (Rge e1 e2) = do
 
 
 -- EXPRESSÕES LÓGICAS
-genExprL String -> [Var] -> [Funcao] -> String -> String -> ExprL -> State Int String
+genExprL :: String -> [Var] -> [Funcao] -> String -> String -> ExprL -> State Int String
 
 -- and
 genExprL c tab fun v f (And e1 e2) = do 
@@ -270,7 +270,7 @@ genExpr c tab fun (DoubleInt e1 e2) = do
 genExpr c tab fun (IdVar id) = (loadVar id tab)
 
 -- COMANDOS
-genCmd String -> [Var] -> [Funcao] -> Comando -> State Int String
+genCmd :: String -> [Var] -> [Funcao] -> Comando -> State Int String
 
 -- if-else
 genCmd c tab fun (If e vb fb) = do
