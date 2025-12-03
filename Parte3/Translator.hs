@@ -313,7 +313,7 @@ genCmd c tab fun (Imp e) = do
     return ("getstatic java/lang/System/out Ljava/io/PrintStream;\n" ++ e' ++ "invokevirtual java/io/PrintStream/println(" ++ genTipo t1 ++ ")V\n")
 
 -- return
-genCmd c tab fun (Return e) = do
+genCmd c tab fun (Ret e) = do
     case e of
         Just e' -> do
             (t1, e1) <- genExpr c tab fun e

@@ -606,7 +606,7 @@ happyReduction_52 (HappyTerminal (LITERAL happy_var_3))
         _
         (HappyTerminal (ID happy_var_1))
          =  HappyAbsSyn26
-                 (Atrib happy_var_1 (Lit happy_var_3)
+                 (Atrib happy_var_1 (Const (CString happy_var_3))
         )
 happyReduction_52 _ _ _  = notHappyAtAll 
 
@@ -637,7 +637,7 @@ happyReduction_55 (_ `HappyStk`
         _ `HappyStk`
         happyRest)
          = HappyAbsSyn28
-                 (Imp (Lit happy_var_3)
+                 (Imp (Const (CString happy_var_3))
         ) `HappyStk` happyRest
 
 happyReduce_56 = happyReduce 5# 24# happyReduction_56
@@ -781,7 +781,7 @@ happyReduction_72 _  = notHappyAtAll
 happyReduce_73 = happySpecReduce_1  31# happyReduction_73
 happyReduction_73 (HappyTerminal (LITERAL happy_var_1))
          =  HappyAbsSyn36
-                 (Lit happy_var_1
+                 (Const (CString happy_var_1)
         )
 happyReduction_73 _  = notHappyAtAll 
 
