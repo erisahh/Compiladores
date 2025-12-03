@@ -26,9 +26,21 @@ genDouble d = "ldc2_w "++show d++"\n"
 
 genString s = "ldc "++s++"\n"
 
+searchVar :: Id -> [Var] -> State Int (Tipo, String)
+searchVar _ [] = return (TVoid, 0)
+searchVar id ((idv :#: (t, nome)) vs) | id==idv = return (t, nome)
+									  | otherwise = searchVar id vs
+
+genVarStore :: Tipo -> Int -> String
+genVarStore t nm | t == TInt && 5 < nm                = "istore " ++ show nm ++ "\n"
+                 | t == TInt && 0 <= nm && nm <= 5    = "istore_" ++ show nm ++ "\n"
+                 | t == TDouble && 5 < nm             = "dstore " ++ show nm ++ "\n"
+                 | t == TDouble && 0 <= nm && nm <= 5 = "dstore_" ++ show nm ++ "\n"
+                 | t == TString                       = "astore " ++ show nm ++ "\n"
+                 | otherwise                          = "Erro -> Assign de tipo inválido\n"
 
 -- EXPRESSÕES LÓGICAS
-genExprL String -> [Var] -> [Funcao] -> String -> String -> ExprL -> String Int State
+genExprL String -> [Var] -> [Funcao] -> String -> String -> ExprL -> State Int String
 
 -- and
 genExprL c tab fun v f (And e1 e2) = do 
@@ -55,7 +67,7 @@ genExprL c tab fun v f (Rel e1) = do
     return (e1')
 
 -- EXPRESSÕES RELACIONAIS
-genExprR String -> [Var] -> [Funcao] -> String -> String -> ExprR -> String Int State
+genExprR String -> [Var] -> [Funcao] -> String -> String -> ExprR -> State Int String
 
 -- req
 genExprR c tab fun v f (Req e1 e2) = do 
@@ -176,7 +188,9 @@ genCmd c tab fun (While e b) = do
 
 -- atrib
 genCmd c tab fun (Atrib id e) = do
-	
+	(te, s)	<- Expr c tab fun e
+	(tv, nome) <- findVar id tab
+	return (s++(genVarStore tv nome))
 
 -- for
 genCmd c tab fun (For c1 el c2 b) = do
