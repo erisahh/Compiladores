@@ -55,7 +55,8 @@ main = do
  -- CÓDIGO DE MÁQUINA
  let (res, i) = runState (genProg "Prog" resultado) 0
 
- hPutStrLn bytecode res
+hPutStrLn bytecode res
 
- hClose input 
- hClose output
+hClose input 
+hClose output
+hClose bytecode
