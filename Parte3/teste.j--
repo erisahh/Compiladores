@@ -1,3 +1,12 @@
+double maior (double a, double b)
+{
+  int m;
+  
+  if (a > b) {m = a;}
+  else {m = b;}
+  return m;
+}
+
 int somatorio (int n)
 {
    int i; 
@@ -11,14 +20,34 @@ int somatorio (int n)
    return s;
 }
 
+int fat (int n)
 {
-  int a, ans;
+  int f;
+  
+  f = 0;
+  while (n > 0)
+  { 
+    f = f * n;
+    n = n - 1;
+  }
+  return f;
+}  
 
-  read(a);
+void imprimir(string s, double r)
+{
+  print (s);
+  print (r);
+  return;
+}
 
-  ans = somatorio(a);
-
-  print(ans);
-
+{
+  int x, num;
+  double a;
+  
+  print("Numero:");
+  read (num);
+  x = fat (4.5);
+  a = maior (2.5, 10);
+  imprimir("teste:", 1);
   return;
 }
