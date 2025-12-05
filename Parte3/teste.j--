@@ -46,7 +46,6 @@ void imprimir(string s, double r)
   
   print("Numero:");
   read (num);
-  x = fat (4.5);
   a = maior (2.5, 10);
   imprimir("teste:", 1);
   return;
